@@ -1,0 +1,741 @@
+openapi: 3.1.0
+info:
+  title: Flood Monitor API
+  description: |-
+    REST-Schnittstelle eines Hochwasser-Frühwarnsystems.
+
+    **Formate:** Alle Endpunkte liefern JSON (Standard) oder XML. Die Auswahl erfolgt über den `Accept`-Header (`application/json`, `application/xml`) oder durch Anhängen von `/xml` an die URL. Andere Formate → `406 Not Acceptable`.
+
+    **Authentifizierung:** Lesende Endpunkte (GET) sind öffentlich. Schreibende Endpunkte (POST, DELETE) benötigen den Header `X-API-Key`. Fehlt er → `401`, ist er falsch → `403`.
+
+    **Fehler** werden einheitlich als `ApiError` (JSON oder XML) geliefert, ohne Stacktrace.
+  version: v1
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Stationen
+  description: "Messstationen, Messwerte und Statistik"
+paths:
+  /api/v1/stations:
+    get:
+      tags:
+      - Stationen
+      summary: Alle Messstationen abrufen
+      description: Alle Filter sind optional und kombinierbar.
+      operationId: getStations
+      parameters:
+      - name: river
+        in: query
+        description: "Fluss, Groß-/Kleinschreibung egal"
+        required: false
+        schema:
+          type: string
+        example: Donau
+      - name: isActive
+        in: query
+        description: nur aktive bzw. deaktivierte Stationen
+        required: false
+        schema:
+          type: boolean
+      - name: warningLevel
+        in: query
+        description: aktuelle Warnstufe der Station
+        required: false
+        schema:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+      responses:
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "200":
+          description: Liste der Stationen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Station"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Station"
+    post:
+      tags:
+      - Stationen
+      summary: Neue Station anlegen
+      description: Body als JSON oder XML. Warnstufe und Status werden serverseitig
+        bestimmt. Benötigt X-API-Key.
+      operationId: createStation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StationRequest"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/StationRequest"
+        required: true
+      responses:
+        "201":
+          description: "Station angelegt, Location-Header zeigt auf die neue Ressource"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Station"
+        "401":
+          description: X-API-Key fehlt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: X-API-Key ungültig
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Station mit dieser ID existiert bereits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "415":
+          description: Content-Type weder JSON noch XML
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+      security:
+      - apiKey: []
+  /api/v1/stations/{stationId}:
+    get:
+      tags:
+      - Stationen
+      summary: Einzelne Station abrufen
+      operationId: getStation
+      parameters:
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ST-001
+      responses:
+        "200":
+          description: Station gefunden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Station"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Station"
+        "404":
+          description: Station nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      tags:
+      - Stationen
+      summary: Station löschen
+      description: Löscht die Station samt Messungen. Benötigt X-API-Key.
+      operationId: deleteStation
+      parameters:
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: "Station gelöscht, keine Antwortdaten"
+        "401":
+          description: X-API-Key fehlt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: X-API-Key ungültig
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Station nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+      security:
+      - apiKey: []
+  /api/v1/stations/{stationId}/statistics:
+    get:
+      tags:
+      - Stationen
+      summary: Statistik einer Station
+      description: "Min/Max/Durchschnitt Wasserstand, Durchschnitt Durchfluss, Niederschlagssumme,\
+        \ Anzahl Messungen/Warnungen."
+      operationId: getStatistics
+      parameters:
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ST-001
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      responses:
+        "200":
+          description: Statistik
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Statistics"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Statistics"
+        "404":
+          description: Station nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/v1/stations/{stationId}/measurements:
+    get:
+      tags:
+      - Stationen
+      summary: Historische Messwerte abrufen
+      description: Neueste zuerst. from/to sind inklusive.
+      operationId: getMeasurements
+      parameters:
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ST-001
+      - name: from
+        in: query
+        description: Beginn (ISO-8601)
+        required: false
+        schema:
+          type: string
+          format: date-time
+        example: 2026-05-01T08:00:00Z
+      - name: to
+        in: query
+        description: "Ende (ISO-8601), darf nicht vor from liegen"
+        required: false
+        schema:
+          type: string
+          format: date-time
+        example: 2026-05-01T12:00:00Z
+      - name: limit
+        in: query
+        description: "maximale Anzahl, 1–1000, Standard 100"
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: warningLevel
+        in: query
+        description: nur Messungen mit dieser Warnstufe
+        required: false
+        schema:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+      responses:
+        "200":
+          description: Liste der Messungen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Measurement"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Measurement"
+        "404":
+          description: Station nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/v1/stations/{stationId}/measurements/latest:
+    get:
+      tags:
+      - Stationen
+      summary: Aktuellsten Messwert abrufen
+      operationId: getLatestMeasurement
+      parameters:
+      - name: stationId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ST-001
+      responses:
+        "200":
+          description: Aktuellste Messung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measurement"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Measurement"
+        "404":
+          description: Station nicht gefunden oder noch keine Messung
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: "Ungültige Eingabe (Parameter, Zeitraum, Limit, Warnstufe)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML (ohne Body)
+        "500":
+          description: Interner Fehler (ohne Stacktrace)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /api/v1/alerts:
+    get:
+      tags:
+      - Warnungen
+      summary: Aktuelle Warnungen abrufen
+      description: "Aktive Stationen mit aktueller Warnstufe WARNING oder CRITICAL,\
+        \ kritische zuerst."
+      operationId: getAlerts
+      parameters:
+      - name: warningLevel
+        in: query
+        description: WARNING oder CRITICAL
+        required: false
+        schema:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+      - name: river
+        in: query
+        required: false
+        schema:
+          type: string
+        example: Donau
+      responses:
+        "200":
+          description: Liste der Warnungen (ggf. leer)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+        "400":
+          description: Ungültige Warnstufe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "406":
+          description: Accept-Header verlangt weder JSON noch XML
+components:
+  schemas:
+    Location:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+    StationRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        river:
+          type: string
+        location:
+          $ref: "#/components/schemas/Location"
+        normalWaterLevel:
+          type: number
+          format: double
+        warningWaterLevel:
+          type: number
+          format: double
+        criticalWaterLevel:
+          type: number
+          format: double
+        meanFlowRate:
+          type: number
+          format: double
+        baseTemperature:
+          type: number
+          format: double
+        isActive:
+          type: boolean
+    ApiError:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+    Station:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        river:
+          type: string
+        location:
+          $ref: "#/components/schemas/Location"
+        normalWaterLevel:
+          type: number
+          format: double
+        warningWaterLevel:
+          type: number
+          format: double
+        criticalWaterLevel:
+          type: number
+          format: double
+        isActive:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - ONLINE
+          - MAINTENANCE
+          - OFFLINE
+        currentWarningLevel:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+    Statistics:
+      type: object
+      properties:
+        stationId:
+          type: string
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        measurementCount:
+          type: integer
+          format: int32
+        minWaterLevel:
+          type: number
+          format: double
+        maxWaterLevel:
+          type: number
+          format: double
+        avgWaterLevel:
+          type: number
+          format: double
+        avgFlowRate:
+          type: number
+          format: double
+        rainfallSum:
+          type: number
+          format: double
+        warningCount:
+          type: integer
+          format: int32
+        criticalCount:
+          type: integer
+          format: int32
+    Measurement:
+      type: object
+      properties:
+        stationId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        waterLevel:
+          type: number
+          format: double
+        flowRate:
+          type: number
+          format: double
+        rainfall:
+          type: number
+          format: double
+        temperature:
+          type: number
+          format: double
+        batteryLevel:
+          type: integer
+          format: int32
+        status:
+          type: string
+          enum:
+          - ONLINE
+          - MAINTENANCE
+          - OFFLINE
+        warningLevel:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+    Alert:
+      type: object
+      properties:
+        stationId:
+          type: string
+        stationName:
+          type: string
+        river:
+          type: string
+        warningLevel:
+          type: string
+          enum:
+          - NORMAL
+          - WARNING
+          - CRITICAL
+          - UNKNOWN
+        waterLevel:
+          type: number
+          format: double
+        warningWaterLevel:
+          type: number
+          format: double
+        criticalWaterLevel:
+          type: number
+          format: double
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      description: API-Key für schreibende Zugriffe (Property api.key)
+      name: X-API-Key
+      in: header
