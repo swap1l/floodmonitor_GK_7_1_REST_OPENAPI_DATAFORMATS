@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.0'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.example'
@@ -17,7 +17,13 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+    // OpenAPI-Dokumentation + Swagger UI (/swagger-ui.html, /v3/api-docs)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+    // jQuery für den Webclient, ausgeliefert unter /webjars/jquery/3.6.1/
+    implementation 'org.webjars:jquery:3.6.1'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
