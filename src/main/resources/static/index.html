@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flood Monitor</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+    <h1>Flood Monitor <span class="subtitle">Hochwasser-Frühwarnsystem</span></h1>
+    <div class="toolbar">
+        <div class="format-switch" role="group" aria-label="Datenformat">
+            <span>Format:</span>
+            <label><input type="radio" name="format" value="json" checked> JSON</label>
+            <label><input type="radio" name="format" value="xml"> XML</label>
+        </div>
+        <label>
+            <input type="checkbox" id="auto-refresh" checked> Automatisch aktualisieren alle
+            <select id="refresh-interval">
+                <option value="5000">5 s</option>
+                <option value="10000" selected>10 s</option>
+                <option value="30000">30 s</option>
+                <option value="60000">60 s</option>
+            </select>
+        </label>
+        <button id="refresh-now" type="button">Jetzt aktualisieren</button>
+        <span id="loading" class="loading" hidden>Lädt…</span>
+        <span id="last-update" class="muted"></span>
+    </div>
+</header>
+
+<div id="error" class="error" hidden></div>
+
+<main>
+    <section class="panel">
+        <h2>Aktuelle Warnungen</h2>
+        <ul id="alerts" class="alerts"><li class="muted">Noch keine Daten</li></ul>
+    </section>
+
+    <section class="panel">
+        <h2>Messstationen</h2>
+        <div class="filters">
+            <label>Fluss <select id="station-river"><option value="">alle</option></select></label>
+            <label>Warnstufe
+                <select id="station-warning">
+                    <option value="">alle</option>
+                    <option>NORMAL</option><option>WARNING</option><option>CRITICAL</option><option>UNKNOWN</option>
+                </select>
+            </label>
+        </div>
+        <div id="stations" class="stations"></div>
+    </section>
+
+    <section class="panel">
+        <h2>Aktueller Messwert <span id="latest-station" class="muted"></span></h2>
+        <div id="latest" class="latest"><p class="muted">Station auswählen</p></div>
+    </section>
+
+    <section class="panel">
+        <h2>Statistik <span class="muted">(gewählter Zeitraum)</span></h2>
+        <div id="statistics" class="statistics"><p class="muted">Station auswählen</p></div>
+    </section>
+
+    <section class="panel wide">
+        <h2>Historische Messwerte</h2>
+        <form id="history-filter" class="filters">
+            <label>Station <select id="station-select"></select></label>
+            <label>Von <input type="datetime-local" id="from"></label>
+            <label>Bis <input type="datetime-local" id="to"></label>
+            <label>Warnstufe
+                <select id="warning-level">
+                    <option value="">alle</option>
+                    <option>NORMAL</option><option>WARNING</option><option>CRITICAL</option><option>UNKNOWN</option>
+                </select>
+            </label>
+            <label>Anzahl <input type="number" id="limit" value="50" min="1" max="1000"></label>
+            <button type="submit">Filtern</button>
+            <button type="button" id="reset-filter">Zurücksetzen</button>
+        </form>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Station</th><th>Zeitpunkt</th><th>Wasserstand (cm)</th><th>Durchfluss (m³/s)</th>
+                    <th>Niederschlag (mm/h)</th><th>Temperatur (°C)</th><th>Akku (%)</th><th>Status</th><th>Warnstufe</th>
+                </tr>
+                </thead>
+                <tbody id="history"><tr><td colspan="9" class="muted">Station auswählen</td></tr></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel wide">
+        <h2>Letzte Rohantwort <span id="raw-info" class="muted"></span></h2>
+        <pre id="raw" class="raw"></pre>
+    </section>
+</main>
+
+<footer class="muted">
+    API-Dokumentation: <a href="swagger-ui.html">Swagger UI</a> · <a href="v3/api-docs">OpenAPI (JSON)</a>
+</footer>
+
+<script src="webjars/jquery/3.6.1/jquery.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
